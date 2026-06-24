@@ -33,7 +33,6 @@ class MovingAverageCrossStrategy:
             reason = f"AI score sell trigger, ai_score={ai_score:.1f}"
             return Signal(symbol, Side.SELL, 0.70, reason, price, datetime.now(timezone.utc))
 
-
         if prev["fast"] <= prev["slow"] and last["fast"] > last["slow"]:
             spread = (last["fast"] - last["slow"]) / last["slow"]
             confidence = min(0.95, 0.60 + float(spread) * 10 + ai_boost)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime, timezone
 
@@ -53,7 +53,7 @@ class OrderPlan:
     limit_price: float | None
     reason: str
     dry_run: bool = True
-    created_at: datetime = datetime.now(timezone.utc)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
     def estimated_value(self) -> float:

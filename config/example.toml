@@ -21,7 +21,10 @@ max_drawdown_pct = 0.08
 risk_per_trade_pct = 0.005
 min_cash_pct = 0.20
 stop_loss_pct = 0.05
+take_profit_pct = 0.15
+max_holding_days = 20
 max_open_positions = 8
+whole_share_only = true
 
 [strategy]
 name = "moving_average_cross"

@@ -27,7 +27,10 @@ class RiskConfig(BaseModel):
     risk_per_trade_pct: float = Field(default=0.005, gt=0, le=1)
     min_cash_pct: float = Field(default=0.20, ge=0, le=1)
     stop_loss_pct: float = Field(default=0.05, gt=0, le=1)
+    take_profit_pct: float = Field(default=0.15, gt=0, le=2)
+    max_holding_days: int = Field(default=20, ge=1)
     max_open_positions: int = Field(default=8, ge=1)
+    whole_share_only: bool = True
 
 
 class StrategyConfig(BaseModel):

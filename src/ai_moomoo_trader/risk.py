@@ -52,8 +52,15 @@ class RiskEngine:
         if order_value < 5:
             return RiskDecision(False, None, "order value too small after risk filters")
 
-        qty = max(1, int(order_value / signal.price))
+        raw_qty = order_value / signal.price
+        qty = max(1, int(raw_qty)) if self.config.whole_share_only else round(raw_qty, 6)
         if qty <= 0:
             return RiskDecision(False, None, "quantity is zero")
+
+        estimated_value = qty * signal.price
+        if estimated_value > usable_cash:
+            return RiskDecision(False, None, "not enough usable cash for whole-share order")
+        if estimated_value > available_position_room:
+            return RiskDecision(False, None, "whole-share order exceeds position limit")
 
         return RiskDecision(True, OrderPlan(signal.symbol, signal.side, qty, OrderType.LIMIT, signal.price, signal.reason), "approved buy")

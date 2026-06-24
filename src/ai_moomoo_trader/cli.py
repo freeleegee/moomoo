@@ -9,6 +9,7 @@ from .brokers.mock import MockBroker
 from .brokers.moomoo_broker import MoomooBroker
 from .config import load_config
 from .data.market_data import MoomooMarketData, SampleMarketData
+from .position_manager import PositionManager
 from .risk import RiskEngine
 from .strategies.moving_average import MovingAverageCrossStrategy
 
@@ -60,6 +61,7 @@ def main() -> None:
     parser.add_argument("--backtest", action="store_true", help="run simple long-only backtest instead of trading loop")
     parser.add_argument("--offline-dry-run", action="store_true", help="when OpenD is unavailable, fall back to mock/sample providers in dry-run mode")
     parser.add_argument("--audit-log", default="logs/audit.log")
+    parser.add_argument("--position-state", default="logs/positions.json")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -84,12 +86,48 @@ def main() -> None:
     broker = build_broker(cfg, offline_fallback=offline_fallback)
     risk = RiskEngine(cfg.risk)
     audit = AuditLogger(args.audit_log)
+    positions = PositionManager(args.position_state)
+
+    def handle_signal(signal, ai_payload=None):
+        decision = risk.evaluate(signal, account)
+        audit.write("risk_decision", {"signal": signal, "ai_score": ai_payload, "decision": decision})
+        print(f"{signal.symbol}: {signal.side.value} conf={signal.confidence:.2f} approved={decision.approved} reason={decision.reason}")
+        if decision.approved and decision.order:
+            if args.execute and not args.dry_run:
+                result = broker.place_order(decision.order)
+                audit.write("order_submitted", {"order": decision.order, "result": result})
+                print(f"submitted: {result}")
+            else:
+                audit.write("order_dry_run", {"order": decision.order})
+                print(f"dry-run order: {decision.order}")
 
     account = broker.get_account_state()
+    positions.sync(account)
     print(f"Account equity={account.equity:.2f} cash={account.cash:.2f}")
 
     for symbol in cfg.strategy.symbols:
         prices = market_data.get_daily_bars(symbol, cfg.strategy.lookback_days)
+        current_price = float(prices.iloc[-1]["close"])
+
+        snap = positions.snapshot(account, symbol, current_price)
+        if snap is not None:
+            holding = "unknown" if snap.holding_days is None else str(snap.holding_days)
+            print(
+                f"{symbol}: position qty={snap.qty:g} avg={snap.avg_price:.2f} "
+                f"price={snap.current_price:.2f} pnl={snap.unrealized_pct:.2%} holding_days={holding}"
+            )
+            exit_signal = positions.exit_signal(
+                account,
+                symbol,
+                current_price,
+                stop_loss_pct=cfg.risk.stop_loss_pct,
+                take_profit_pct=cfg.risk.take_profit_pct,
+                max_holding_days=cfg.risk.max_holding_days,
+            )
+            if exit_signal is not None:
+                handle_signal(exit_signal)
+                continue
+
         ai = scorer.score(prices)
         print(f"{symbol}: ai_score={ai.final_score:.1f} ({ai.reason})")
         if ai.final_score < cfg.strategy.ai_score_min:
@@ -101,17 +139,7 @@ def main() -> None:
         if signal is None:
             print(f"{symbol}: no signal")
             continue
-        decision = risk.evaluate(signal, account)
-        audit.write("risk_decision", {"signal": signal, "ai_score": ai.__dict__, "decision": decision})
-        print(f"{symbol}: {signal.side.value} conf={signal.confidence:.2f} approved={decision.approved} reason={decision.reason}")
-        if decision.approved and decision.order:
-            if args.execute and not args.dry_run:
-                result = broker.place_order(decision.order)
-                audit.write("order_submitted", {"order": decision.order, "result": result})
-                print(f"submitted: {result}")
-            else:
-                audit.write("order_dry_run", {"order": decision.order})
-                print(f"dry-run order: {decision.order}")
+        handle_signal(signal, ai.__dict__)
 
     for obj in (market_data, broker):
         close = getattr(obj, "close", None)

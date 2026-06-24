@@ -98,3 +98,38 @@ v0.5 建议加入：
 - 每日净值曲线
 - 更严肃的回测统计：夏普、胜率、盈亏比、交易成本
 - 新闻/RAG/LLM 研究 Agent
+
+## v0.5 risk/position upgrade
+
+This version adds three safety-oriented changes:
+
+1. Position manager: records first-seen positions in `logs/positions.json`, prints qty, average cost, current price, unrealized P/L, and holding days.
+2. Exit rules before new buys: existing positions are checked for stop loss, take profit, and max holding days before the AI/MA buy strategy runs.
+3. Whole-share sizing: default buy quantity is rounded down to an integer share count to match moomoo simulated US stock behavior.
+
+Risk parameters live in `[risk]`:
+
+```toml
+stop_loss_pct = 0.05
+take_profit_pct = 0.15
+max_holding_days = 20
+whole_share_only = true
+```
+
+Run tests:
+
+```bash
+PYTHONPATH=src pytest -q
+```
+
+Run local moomoo dry-run:
+
+```bash
+PYTHONPATH=src python3 -m ai_moomoo_trader.cli --config config/local.toml --dry-run
+```
+
+Submit to moomoo simulated trading only after checking dry-run output:
+
+```bash
+PYTHONPATH=src python3 -m ai_moomoo_trader.cli --config config/local.toml --execute
+```
