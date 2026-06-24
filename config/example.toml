@@ -1,0 +1,23 @@
+[broker]
+type = "moomoo" # mock | moomoo
+env = "SIMULATE"
+host = "127.0.0.1"
+port = 11111
+market = "US"
+
+[account]
+base_currency = "USD"
+initial_cash = 10000
+
+[risk]
+max_position_pct = 0.10
+max_order_value = 500
+max_daily_loss_pct = 0.02
+risk_per_trade_pct = 0.005
+min_cash_pct = 0.20
+
+[strategy]
+name = "moving_average_cross"
+symbols = ["US.NVDA", "US.MSFT", "US.AAPL"]
+fast_window = 5
+slow_window = 20
