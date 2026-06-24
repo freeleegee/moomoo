@@ -52,7 +52,7 @@ class RiskEngine:
         if order_value < 5:
             return RiskDecision(False, None, "order value too small after risk filters")
 
-        qty = round(order_value / signal.price, 6)
+        qty = max(1, int(order_value / signal.price))
         if qty <= 0:
             return RiskDecision(False, None, "quantity is zero")
 
