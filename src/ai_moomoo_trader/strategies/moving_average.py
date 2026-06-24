@@ -12,7 +12,7 @@ class MovingAverageCrossStrategy:
         self.fast_window = fast_window
         self.slow_window = slow_window
 
-    def generate_signal(self, prices: pd.DataFrame) -> Signal | None:
+    def generate_signal(self, prices: pd.DataFrame, ai_score: float | None = None) -> Signal | None:
         if len(prices) < self.slow_window + 2:
             return None
         df = prices.copy()
@@ -23,9 +23,19 @@ class MovingAverageCrossStrategy:
         symbol = str(last.get("symbol", "UNKNOWN"))
         price = float(last["close"])
 
+        ai_boost = 0.0 if ai_score is None else max(-0.1, min(0.1, (ai_score - 50.0) / 500.0))
+
         if prev["fast"] <= prev["slow"] and last["fast"] > last["slow"]:
             spread = (last["fast"] - last["slow"]) / last["slow"]
-            return Signal(symbol, Side.BUY, min(0.95, 0.60 + float(spread) * 10), "fast MA crossed above slow MA", price, datetime.now(timezone.utc))
+            confidence = min(0.95, 0.60 + float(spread) * 10 + ai_boost)
+            reason = "fast MA crossed above slow MA"
+            if ai_score is not None:
+                reason += f"; ai_score={ai_score:.1f}"
+            return Signal(symbol, Side.BUY, confidence, reason, price, datetime.now(timezone.utc))
         if prev["fast"] >= prev["slow"] and last["fast"] < last["slow"]:
-            return Signal(symbol, Side.SELL, 0.70, "fast MA crossed below slow MA", price, datetime.now(timezone.utc))
+            confidence = min(0.95, 0.70 + max(0.0, -ai_boost))
+            reason = "fast MA crossed below slow MA"
+            if ai_score is not None:
+                reason += f"; ai_score={ai_score:.1f}"
+            return Signal(symbol, Side.SELL, confidence, reason, price, datetime.now(timezone.utc))
         return None

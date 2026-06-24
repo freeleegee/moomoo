@@ -12,6 +12,7 @@ def test_strategy_can_emit_buy_signal():
     s = MovingAverageCrossStrategy(2, 4)
     closes = [10, 10, 10, 10, 9, 12]
     df = pd.DataFrame({"symbol": ["US.AAPL"] * len(closes), "close": closes})
-    sig = s.generate_signal(df)
+    sig = s.generate_signal(df, ai_score=70)
     assert sig is not None
     assert sig.side.value == "BUY"
+    assert "ai_score" in sig.reason

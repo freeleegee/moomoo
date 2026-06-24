@@ -1,0 +1,12 @@
+.venv/
+.env
+.env.*
+logs/
+data/
+config/local.toml
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.egg-info/
+.DS_Store
+__MACOSX/

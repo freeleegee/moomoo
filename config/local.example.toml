@@ -1,12 +1,12 @@
 [broker]
-type = "mock" # mock | moomoo
+type = "moomoo"
 env = "SIMULATE"
 host = "127.0.0.1"
 port = 11111
 market = "US"
 
 [data]
-source = "sample" # sample | moomoo
+source = "moomoo"
 
 [account]
 base_currency = "USD"

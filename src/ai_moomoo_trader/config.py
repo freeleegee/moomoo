@@ -19,11 +19,15 @@ class AccountConfig(BaseModel):
 
 
 class RiskConfig(BaseModel):
+    min_confidence: float = Field(default=0.55, ge=0, le=1)
     max_position_pct: float = Field(default=0.10, gt=0, le=1)
     max_order_value: float = Field(default=500, gt=0)
     max_daily_loss_pct: float = Field(default=0.02, gt=0, le=1)
+    max_drawdown_pct: float = Field(default=0.08, gt=0, le=1)
     risk_per_trade_pct: float = Field(default=0.005, gt=0, le=1)
     min_cash_pct: float = Field(default=0.20, ge=0, le=1)
+    stop_loss_pct: float = Field(default=0.05, gt=0, le=1)
+    max_open_positions: int = Field(default=8, ge=1)
 
 
 class StrategyConfig(BaseModel):
@@ -31,6 +35,12 @@ class StrategyConfig(BaseModel):
     symbols: list[str]
     fast_window: int = 5
     slow_window: int = 20
+    ai_score_min: float = Field(default=55.0, ge=0, le=100)
+    lookback_days: int = Field(default=140, ge=30)
+
+
+class DataConfig(BaseModel):
+    source: str = "sample"  # sample | moomoo
 
 
 class AppConfig(BaseModel):
@@ -38,6 +48,7 @@ class AppConfig(BaseModel):
     account: AccountConfig
     risk: RiskConfig
     strategy: StrategyConfig
+    data: DataConfig = DataConfig()
 
 
 def load_config(path: str | Path) -> AppConfig:

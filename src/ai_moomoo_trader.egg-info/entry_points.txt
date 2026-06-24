@@ -1,2 +1,0 @@
-[console_scripts]
-ai-trader = ai_moomoo_trader.cli:main
