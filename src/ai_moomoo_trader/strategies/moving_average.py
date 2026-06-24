@@ -25,6 +25,15 @@ class MovingAverageCrossStrategy:
 
         ai_boost = 0.0 if ai_score is None else max(-0.1, min(0.1, (ai_score - 50.0) / 500.0))
 
+        if ai_score is not None and ai_score >= 70:
+            reason = f"AI score buy trigger, ai_score={ai_score:.1f}"
+            return Signal(symbol, Side.BUY, min(ai_score / 100.0, 0.95), reason, price, datetime.now(timezone.utc))
+
+        if ai_score is not None and ai_score <= 40:
+            reason = f"AI score sell trigger, ai_score={ai_score:.1f}"
+            return Signal(symbol, Side.SELL, 0.70, reason, price, datetime.now(timezone.utc))
+
+
         if prev["fast"] <= prev["slow"] and last["fast"] > last["slow"]:
             spread = (last["fast"] - last["slow"]) / last["slow"]
             confidence = min(0.95, 0.60 + float(spread) * 10 + ai_boost)
